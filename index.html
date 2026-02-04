@@ -2,120 +2,597 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>For My Love ❤️</title>
+<title>For You</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<!-- GSAP -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{
-  width:100%;height:100%;
-  background:linear-gradient(135deg,#ff758c,#ff7eb3);
-  font-family:'Montserrat',sans-serif;
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  height:100vh;
+  background:radial-gradient(circle at top,#111,#000);
   color:#fff;
-  text-align:center;
-}
-
-.container{
-  min-height:100%;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   display:flex;
-  flex-direction:column;
-  justify-content:center;
   align-items:center;
-  padding:24px;
+  justify-content:center;
+  overflow:hidden;
 }
 
-.card{
-  background:rgba(255,255,255,.18);
-  padding:32px;
-  border-radius:26px;
-  max-width:380px;
-  backdrop-filter:blur(10px);
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-}
-
-h1{
-  font-family:'Cinzel',serif;
-  letter-spacing:2px;
-  margin-bottom:20px;
-}
-
-p{
-  line-height:1.6;
-  font-weight:300;
-}
-
-input{
-  margin-top:16px;
-  padding:12px;
-  width:100%;
-  border-radius:20px;
-  border:none;
+#card{
+  width:90%;
+  max-width:360px;
+  padding:28px;
+  border-radius:18px;
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(14px);
   text-align:center;
-  font-size:1rem;
-}
-
-button{
-  margin-top:22px;
-  padding:14px 28px;
-  border:none;
-  border-radius:30px;
-  background:#fff;
-  color:#ff4d6d;
-  font-size:1rem;
-  font-weight:600;
   cursor:pointer;
 }
 
-.hidden{display:none}
+h1{
+  font-size:1.4rem;
+  margin-bottom:12px;
+}
+
+p{
+  font-size:1.05rem;
+  line-height:1.4;
+  opacity:.9;
+}
+
+#progress{
+  height:4px;
+  width:0%;
+  background:#ff4d6d;
+  border-radius:4px;
+  margin-top:20px;
+  transition:width .4s ease;
+}
+
+#music{
+  position:fixed;
+  top:14px;
+  right:14px;
+  background:rgba(255,255,255,.08);
+  border:none;
+  color:#fff;
+  padding:8px 12px;
+  border-radius:12px;
+  font-size:.9rem;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<button id="music">Music: OFF 🔇</button>
 
-  <!-- LOCK SCREEN -->
-  <div class="card" id="lock">
-    <h1>💖 For You</h1>
-    <p>This page opens only for one heart.</p>
-    <input id="pwd" type="password" placeholder="❤️ Secret password">
-    <button onclick="unlock()">Unlock</button>
-  </div>
-
-  <!-- MAIN CONTENT -->
-  <div class="card hidden" id="main">
-    <h1>Happy Valentine’s ❤️</h1>
-    <p>
-      Some moments are meant to be discovered…<br><br>
-      If you’re here, you already know  
-      how special this is.
-    </p>
-    <p style="margin-top:20px;font-size:.9rem;opacity:.8">
-      📱 Scan the QR I gave you<br>
-      to unlock what comes next
-    </p>
-  </div>
-
+<div id="card">
+  <h1 id="title"></h1>
+  <p id="text"></p>
+  <div id="progress"></div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const PASSWORD = "love123";
+/* ================= TOKEN CHECK ================= */
 
-/* ================= LOGIC ================= */
-function unlock(){
-  if(pwd.value === PASSWORD){
-    lock.classList.add("hidden");
-    main.classList.remove("hidden");
-    confetti({particleCount:120,spread:80});
+const params = new URLSearchParams(location.search);
+const token = params.get("token");
+
+if(!token){
+  document.body.innerHTML =
+    "<h2 style='opacity:.7'>This moment was not meant to be opened directly.</h2>";
+  throw new Error("No token");
+}
+
+const key = "used_" + token;
+
+if(localStorage.getItem(key)){
+  document.body.innerHTML =
+    "<h2 style='opacity:.7'>This moment has already been lived.</h2>";
+  throw new Error("Token already used");
+}
+
+localStorage.setItem(key,"true");
+
+/* ================= MUSIC ================= */
+
+const audio = new Audio("music.mp3"); // optional
+let playing=false;
+const musicBtn=document.getElementById("music");
+
+musicBtn.onclick=()=>{
+  if(!playing){
+    audio.play();
+    musicBtn.innerText="Music: ON 🎵";
   }else{
-    alert("Wrong password ❤️");
+    audio.pause();
+    musicBtn.innerText="Music: OFF 🔇";
+  }
+  playing=!playing;
+};
+
+/* ================= STORY ================= */
+
+const stages=[
+  ["Moment","This page exists only once."],
+  ["Truth","Some feelings aren’t meant to repeat."],
+  ["Heartbeat","Every second here matters."],
+  ["Surprise","You weren’t supposed to expect this."],
+  ["Question","Will you be my forever? ❤️"]
+];
+
+let i=0;
+const title=document.getElementById("title");
+const text=document.getElementById("text");
+const progress=document.getElementById("progress");
+const card=document.getElementById("card");
+
+function render(){
+  title.textContent=stages[i][0];
+  text.textContent=stages[i][1];
+  progress.style.width=((i+1)/stages.length*100)+"%";
+  gsap.fromTo(card,{opacity:0,y:40},{opacity:1,y:0,duration:.8});
+}
+
+render();
+
+card.onclick=()=>{
+  if(i>=stages.length-1){
+    finale();
+    return;
+  }
+  gsap.to(card,{
+    opacity:0,
+    y:-40,
+    duration:.4,
+    onComplete:()=>{
+      i++;
+      render();
+    }
+  });
+};
+
+/* ================= FINALE ================= */
+
+function finale(){
+  for(let j=0;j<70;j++){
+    const h=document.createElement("div");
+    h.textContent="❤️";
+    h.style.position="fixed";
+    h.style.left=Math.random()*100+"vw";
+    h.style.top="100vh";
+    h.style.fontSize=(20+Math.random()*25)+"px";
+    h.style.transition="3s ease-out";
+    document.body.appendChild(h);
+    setTimeout(()=>{
+      h.style.top="-10vh";
+      h.style.opacity="0";
+    },50);
   }
 }
 </script>
 
+</body>
+</html>olute; 
+            width: 140px; height: 170px; /* Increased Size */
+            background: #fff; padding: 6px 6px 35px 6px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
+            transition: 0.5s ease; cursor: pointer; 
+        }
+        .polaroid img { width: 100%; height: 130px; object-fit: cover; filter: grayscale(100%); pointer-events: none; }
+        .polaroid:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 999 !important; }
+        
+        /* Bigger Button */
+        .bulk-btn { 
+            position: absolute; top: 30px; z-index: 50; 
+            padding: 12px 25px; 
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); 
+            color: #fff; font-family: 'Courier Prime'; cursor: pointer; 
+            font-size: 0.8rem; border-radius: 30px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* P3: PRISM CORE */
+        #prism-vault { width: 140px; height: 200px; position: relative; transform-style: preserve-3d; }
+        .prism-face { 
+            position: absolute; width: 140px; height: 200px; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255,255,255,0.5); 
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #prism-core {
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+            background: radial-gradient(circle, #fff 0%, var(--love) 60%, transparent 100%);
+            transform: translate(-50%, -50%); border-radius: 50%;
+            box-shadow: 0 0 40px var(--love), 0 0 80px var(--love);
+            animation: pulse-core 3s infinite alternate ease-in-out;
+        }
+        @keyframes pulse-core {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; box-shadow: 0 0 60px var(--love); }
+        }
+
+        /* P4: NEURAL */
+        #neural-canvas { 
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); 
+            border-radius: 50%; cursor: crosshair; touch-action: none; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        /* P5: LOGS */
+        #log-screen { 
+            width: 100%; height: 250px; 
+            background: rgba(0,0,0,0.6); color: #0f0; 
+            font-size: 0.7rem; padding: 15px; 
+            border: 1px solid #333; border-radius: 5px;
+            overflow: hidden; font-family: monospace; 
+        }
+
+        /* P6: SPLASH */
+        .final-msg { 
+            font-family: 'Sacramento', cursive; 
+            font-size: 3.5rem; /* Bigger Font */
+            color: var(--love); 
+            text-align: center; line-height: 1.1; 
+            text-shadow: 0 0 20px rgba(255, 77, 109, 0.6);
+            animation: pop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .emoji-blast { font-size: 3rem; margin-top: 25px; letter-spacing: 10px; }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* P7: LETTER */
+        .letter-content {
+            width: 100%; height: 75%;
+            overflow-y: auto; text-align: left;
+            font-size: 0.9rem; line-height: 1.7; padding: 20px;
+            background: rgba(255,255,255,0.9); /* Opaque paper for readability */
+            color: #222; border-radius: 10px;
+            margin-bottom: 20px; font-family: 'Courier Prime', monospace;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Universal Action Button */
+        .glitch-btn { 
+            padding: 15px 30px; 
+            background: #fff; color: #000; 
+            border: none; font-family: 'Courier Prime'; font-weight: bold;
+            margin-top: 25px; cursor: pointer; border-radius: 50px; 
+            box-shadow: 0 0 15px rgba(255,255,255,0.4);
+            transition: transform 0.2s;
+        }
+        .glitch-btn:active { transform: scale(0.95); }
+
+        h2, h3 { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" loop playsinline>
+    <source src="song.mp3" type="audio/mp3">
+</audio>
+
+<div class="nebula-bg"></div>
+<canvas id="star-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
+
+<input type="file" id="bulk-upload" multiple accept="image/*" style="display:none" onchange="App.handleBulkUpload(this)">
+
+<div id="book-wrapper">
+
+    <div class="page" id="p1" style="z-index: 7;">
+        <h2 style="font-family: 'Cinzel'; margin-bottom: 40px; text-align: center;">INITIATE PROTOCOL</h2>
+        <div class="hold-container" id="holdTrigger">
+            <svg class="progress-ring"><circle cx="90" cy="90" r="82" id="progressCircle"/></svg>
+            <div class="heart-icon">❤️</div>
+        </div>
+        <p style="margin-top: 30px; font-size: 0.8rem; opacity: 0.8; letter-spacing: 1px;">( HOLD HEART TO UNLOCK )</p>
+    </div>
+
+    <div class="page" id="p2" style="z-index: 6;">
+        <button class="bulk-btn" onclick="document.getElementById('bulk-upload').click()">[ UPLOAD 10 MEMORIES ]</button>
+        <div id="stack-stage" style="position: relative; width: 100%; height: 60%; margin-top: 50px;"></div>
+        <p style="font-size: 0.7rem; color: var(--love); margin-top: 20px;">TAP PHOTOS TO REVEAL</p>
+    </div>
+
+    <div class="page" id="p3" style="z-index: 5;">
+        <div style="font-size: 0.8rem; margin-bottom: 30px; letter-spacing: 2px;">ENERGY CORE: 2026</div>
+        <div style="perspective: 1000px;">
+            <div id="prism-vault">
+                </div>
+        </div>
+        <button class="glitch-btn" onclick="App.turnPage('p3')">ACCESS NEURAL NODE >></button>
+    </div>
+
+    <div class="page" id="p4" style="z-index: 4;">
+        <h3 style="font-family: 'Cinzel'; margin-bottom: 20px;">NEURAL HANDSHAKE</h3>
+        <canvas id="neural-canvas" width="280" height="280"></canvas>
+        <div id="neural-msg" style="font-size: 0.8rem; margin-top: 20px; color: var(--love);">CONNECT THE NODES</div>
+    </div>
+
+    <div class="page" id="p5" style="z-index: 3;">
+        <div style="width: 100%; text-align: left; margin-bottom: 10px; font-size: 0.8rem;">SYSTEM LOGS:</div>
+        <div id="log-screen"></div>
+        <button class="glitch-btn" onclick="App.finalize()">TRANSMIT FINAL PACKET</button>
+    </div>
+
+    <div class="page" id="p6" style="z-index: 2;">
+        <div class="final-msg">Happy<br>New Year</div>
+        <div class="emoji-blast">💞🐼💘🎉🥰</div>
+        <p style="margin-top: 30px; font-size: 0.9rem; opacity: 0.8;">To a year of magic & love.</p>
+        <button class="glitch-btn" style="color: var(--love);" onclick="App.turnPage('p6')">READ MY LETTER >></button>
+    </div>
+
+    <div class="page" id="p7" style="z-index: 1;">
+        <h3 style="font-family: 'Cinzel'; margin-top: 0; color: #fff;">For Bhoomi</h3>
+        <div class="letter-content">
+            <b>My Dearest Bhoomi ❤️,</b>
+            <br><br>
+            As the world prepares to step into 2026, I wanted to pause time for a second just for you.
+            <br><br>
+            Looking back, having you by my side has been the greatest gift I could ask for. Your smile is my favorite view, and your happiness is my biggest goal.
+            <br><br>
+            My wish for you in this new year is simple: May your days be as beautiful as your heart. May you find strength in every challenge and love in every moment.
+            <br><br>
+            Here's to another year of us, of laughter, and of memories we haven't made yet.
+            <br><br>
+            <b>Forever yours,</b><br>
+            Ashish 🌹
+        </div>
+        <div style="font-size: 0.7rem; color: #fff; opacity: 0.7;">SCROLL TO READ FULL MESSAGE</div>
+    </div>
+
+</div>
+
+<script>
+/** BACKGROUND ENGINE */
+const StarSystem = {
+    canvas: null, ctx: null, stars: [],
+    init() {
+        this.canvas = document.getElementById('star-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        for(let i=0; i<100; i++) {
+            this.stars.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.3 + 0.1,
+                opacity: Math.random()
+            });
+        }
+        this.animate();
+    },
+    resize() { this.canvas.width = window.innerWidth; this.canvas.height = window.innerHeight; },
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "white";
+        this.stars.forEach(star => {
+            this.ctx.globalAlpha = star.opacity;
+            this.ctx.beginPath(); this.ctx.arc(star.x, star.y, star.size, 0, Math.PI*2); this.ctx.fill();
+            star.y -= star.speed;
+            if(star.y < 0) { star.y = this.canvas.height; star.x = Math.random() * this.canvas.width; }
+        });
+        requestAnimationFrame(() => this.animate());
+    }
+};
+
+const AudioEngine = {
+    ctx: null,
+    playTone(f, type='sine') {
+        if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + 0.1);
+    },
+    startMusic() {
+        const audio = document.getElementById('bg-music');
+        if(audio) { audio.volume = 0.6; audio.play().catch(e=>{}); }
+    }
+};
+
+const App = {
+    rot: 0, nodes: [],
+    
+    init() {
+        StarSystem.init();
+        this.setupHeart();
+        this.setupPolaroids();
+        this.setupPrism();
+        this.setupNeural();
+    },
+
+    turnPage(id) {
+        document.getElementById(id).classList.add('flipped');
+        AudioEngine.playTone(200, 'triangle');
+    },
+
+    // --- 1. HEART ---
+    setupHeart() {
+        const circle = document.getElementById('progressCircle');
+        const trigger = document.getElementById('holdTrigger');
+        // Updated Circumference for r=82
+        const circumference = 82 * 2 * Math.PI;
+        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+        circle.style.strokeDashoffset = circumference;
+        
+        let progress = 0;
+        let timer = null;
+        let musicStarted = false;
+
+        const start = (e) => {
+            if(timer) return;
+            if(!musicStarted) { AudioEngine.startMusic(); musicStarted = true; }
+            timer = setInterval(() => {
+                progress += 1.5;
+                circle.style.strokeDashoffset = circumference - (progress / 100) * circumference;
+                if(progress >= 100) { clearInterval(timer); timer = null; this.turnPage('p1'); }
+            }, 20);
+        };
+        const end = () => { if(timer) { clearInterval(timer); timer=null; } progress = 0; circle.style.strokeDashoffset = circumference; };
+
+        trigger.addEventListener('mousedown', start);
+        trigger.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, {passive: false});
+        window.addEventListener('mouseup', end);
+        window.addEventListener('touchend', end);
+    },
+
+    // --- 2. IMAGES (SCATTERED BETTER) ---
+    setupPolaroids() {
+        const stage = document.getElementById('stack-stage');
+        for(let i=0; i<10; i++){
+            const d = document.createElement('div');
+            d.className = 'polaroid';
+            d.id = `img-${i}`;
+            // Spread them out more evenly
+            const randomX = (Math.random() * 60) + 10; // 10% to 70% left
+            const randomY = (Math.random() * 60) + 10; // 10% to 70% top
+            d.style.left = randomX + '%';
+            d.style.top = randomY + '%';
+            d.style.transform = `rotate(${Math.random()*40-20}deg)`;
+            d.style.zIndex = 10 + i;
+            d.innerHTML = `<img src="https://via.placeholder.com/150/eee?text=IMG_${i+1}">`;
+            
+            d.onclick = () => {
+                d.style.transform = `translateY(100vh) rotate(100deg)`;
+                d.style.opacity = 0;
+                AudioEngine.playTone(400);
+                setTimeout(() => {
+                    const remaining = document.querySelectorAll('.polaroid[style*="opacity: 0"]').length;
+                    if(remaining >= 9) setTimeout(() => this.turnPage('p2'), 500);
+                }, 200);
+            };
+            stage.appendChild(d);
+        }
+    },
+
+    handleBulkUpload(input) {
+        if(input.files){
+            Array.from(input.files).slice(0,10).forEach((file, i) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.querySelector(`#img-${i} img`);
+                    if(img) { img.src = e.target.result; img.style.filter = "none"; }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    },
+
+    // --- 3. PRISM ---
+    setupPrism() {
+        const v = document.getElementById('prism-vault');
+        const core = document.createElement('div');
+        core.id = 'prism-core';
+        v.appendChild(core);
+        for(let i=0; i<3; i++) {
+            const f = document.createElement('div');
+            f.className = 'prism-face';
+            f.style.transform = `rotateY(${i*120}deg) translateZ(70px)`; // Increased spacing
+            v.appendChild(f);
+        }
+        const anim = () => {
+            this.rot += 1;
+            v.style.transform = `rotateX(-15deg) rotateY(${this.rot}deg)`;
+            requestAnimationFrame(anim);
+        };
+        anim();
+    },
+
+    // --- 4. NEURAL ---
+    setupNeural() {
+        const c = document.getElementById('neural-canvas');
+        const ctx = c.getContext('2d');
+        this.nodes = Array(5).fill(0).map(() => ({x: Math.random()*200+40, y: Math.random()*200+40, a: false}));
+
+        const draw = () => {
+            ctx.clearRect(0,0,280,280);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); // White lines
+            const active = this.nodes.filter(n=>n.a);
+            active.forEach((n,i) => { if(i==0) ctx.moveTo(n.x,n.y); else ctx.lineTo(n.x,n.y); });
+            ctx.stroke();
+            this.nodes.forEach(n => {
+                ctx.beginPath(); ctx.arc(n.x,n.y,8,0,7); 
+                ctx.fillStyle = n.a ? '#ff4d6d' : 'rgba(255,255,255,0.3)'; ctx.fill();
+            });
+        };
+
+        const checkNode = (mx, my) => {
+            this.nodes.forEach(n => {
+                if(Math.hypot(n.x-mx, n.y-my) < 30 && !n.a) { 
+                    n.a = true; draw(); AudioEngine.playTone(600 + (activeCount()*100));
+                    if(this.nodes.every(x=>x.a)) {
+                        document.getElementById('neural-msg').innerText = "ACCESS GRANTED";
+                        setTimeout(() => { this.turnPage('p4'); this.startLogs(); }, 800);
+                    }
+                }
+            });
+        };
+        c.addEventListener('mousemove', e => { const r=c.getBoundingClientRect(); checkNode(e.clientX-r.left, e.clientY-r.top); });
+        c.addEventListener('touchmove', e => { e.preventDefault(); const r=c.getBoundingClientRect(); checkNode(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top); }, {passive:false});
+        const activeCount = () => this.nodes.filter(n=>n.a).length;
+        draw();
+    },
+
+    // --- 5. LOGS & FINAL ---
+    startLogs() {
+        const screen = document.getElementById('log-screen');
+        const lines = ["CONNECTING...", "DECRYPTING HEART_CORE...", "LOADING MEMORIES...", "ANALYZING EMOTIONS...", "STATUS: 100% LOVE", "READY FOR TRANSMISSION"];
+        let i = 0;
+        const addLine = () => {
+            if(i < lines.length) {
+                const d = document.createElement('div');
+                d.className = 'log-line';
+                d.innerText = `> ${lines[i++]}`;
+                screen.appendChild(d);
+                screen.scrollTop = screen.scrollHeight;
+                AudioEngine.playTone(800, 'square');
+                setTimeout(addLine, 400);
+            }
+        };
+        addLine();
+    },
+
+    finalize() {
+        this.turnPage('p5');
+        this.fireConfetti();
+        AudioEngine.playTone(400, 'sine');
+        setTimeout(() => AudioEngine.playTone(600, 'sine'), 200);
+        setTimeout(() => AudioEngine.playTone(800, 'sine'), 400);
+    },
+
+    fireConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const p = Array(100).fill(0).map(() => ({
+            x: canvas.width/2, y: canvas.height/2,
+            vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15 - 5,
+            c: `hsl(${Math.random()*360}, 100%, 50%)`
+        }));
+        const loop = () => {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            p.forEach(part => {
+                part.x += part.vx; part.y += part.vy; part.vy += 0.2;
+                ctx.fillStyle = part.c; ctx.fillRect(part.x, part.y, 6, 6);
+            });
+            requestAnimationFrame(loop);
+        };
+        loop();
+    }
+};
+
+window.onload = () => App.init();
+</script>
 </body>
 </html>
