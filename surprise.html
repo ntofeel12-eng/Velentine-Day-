@@ -1,113 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Only For You</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{
-width:100%;height:100%;
-background:#050a14;
-color:#fff;
-overflow:hidden;
-font-family:Montserrat,sans-serif
-}
-canvas{position:fixed;inset:0;z-index:1}
-
-.stage{
-position:fixed;
-inset:0;
-display:flex;
-align-items:center;
-justify-content:center;
-text-align:center;
-padding:20px;
-z-index:5
-}
-
-.card{
-max-width:680px;
-opacity:0
-}
-
-h1{
-font-family:Cinzel,serif;
-font-size:2.9rem;
-color:#ff3366;
-text-shadow:0 0 22px rgba(255,51,102,.6)
-}
-
-p{
-margin-top:20px;
-font-size:1.15rem;
-line-height:1.7;
-color:#e0e0e0
-}
-
-.progress{
-position:fixed;
-bottom:0;left:0;
-height:4px;
-background:#ff3366;
-width:0%;
-z-index:10
-}
-</style>
+  <meta charset="UTF-8" />
+  <title>Surprise</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
 
-<canvas id="bg"></canvas>
-<div class="progress" id="progress"></div>
+  <!-- YOUR HTML CONTENT -->
+  <canvas id="canvas-bg"></canvas>
 
-<div class="stage">
-  <div class="card" id="card">
-    <h1 id="title"></h1>
-    <p id="text"></p>
-  </div>
-</div>
+  <button class="music-control" onclick="toggleMusic()">Music: OFF 🔇</button>
 
-<script>
-/* ================= SUPABASE ================= */
-const supabase = supabaseJs.createClient(
-  "https://jiryuvhilpavphkxlpyw.supabase.co",
-  "sb_publishable_4Q4tPM4z6TQI9WEgZaYeIQ_Rj1DaxDM"
-);
+  <!-- ✅ ALL JAVASCRIPT MUST BE HERE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-/* ================= TOKEN GUARD ================= */
-const token = new URLSearchParams(location.search).get("token");
-if(!token) location.replace("index.html");
+  <script>
+    /* ===== MUSIC ===== */
+    let musicPlaying = false;
+    const audio = new Audio("music.mp3");
 
-(async()=>{
-  const { data, error } = await supabase
-    .from("qr_tokens")
-    .select("*")
-    .eq("token", token)
-    .single();
+    function toggleMusic() {
+      if (!musicPlaying) {
+        audio.play();
+        document.querySelector('.music-control').innerText = "Music: ON 🎵";
+      } else {
+        audio.pause();
+        document.querySelector('.music-control').innerText = "Music: OFF 🔇";
+      }
+      musicPlaying = !musicPlaying;
+    }
 
-  if(error || !data || data.used){
-    location.replace("index.html");
-    return;
-  }
+    /* ===== PARTICLE BACKGROUND ===== */
+    const canvas = document.getElementById("canvas-bg");
+    const ctx = canvas.getContext("2d");
+    let w, h, particles = [];
 
-  await supabase
-    .from("qr_tokens")
-    .update({ used:true, used_at:new Date() })
-    .eq("token", token);
+    function resizeCanvas() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
 
-  startStory();
-})();
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.alpha = Math.random() * 0.5;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.y < 0 || this.x > w || this.y > h) this.reset();
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(170,221,255,${this.alpha})`;
+        ctx.fill();
+      }
+    }
 
-/* ================= STORY ================= */
-const stages=[
-["Wait…","You actually scanned it."],
-["This Moment","This page exists only once."],
+    for (let i = 0; i < 100; i++) particles.push(new Particle());
+
+    function animateBg() {
+      ctx.clearRect(0, 0, w, h);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateBg);
+    }
+    animateBg();
+  </script>
+
+</body>
+</html>Moment","This page exists only once."],
 ["Truth","Some feelings aren’t meant to repeat."],
 ["Heartbeat","Every second here matters."],
 ["Surprise","You weren’t supposed to expect this."],
