@@ -2,174 +2,212 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Surprise</title>
+  <title>For You</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(180deg, #050505, #000);
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #card {
+      width: 90%;
+      max-width: 360px;
+      padding: 28px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(14px);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 1.05rem;
+      line-height: 1.4;
+      opacity: 0.9;
+    }
+
+    #progress {
+      height: 4px;
+      width: 0%;
+      background: #ff4d6d;
+      border-radius: 4px;
+      margin-top: 20px;
+      transition: width 0.4s ease;
+    }
+
+    .music-control {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 
 <body>
 
-  <!-- YOUR HTML CONTENT -->
-  <canvas id="canvas-bg"></canvas>
+  <button class="music-control" id="musicBtn">Music: OFF 🔇</button>
 
-  <button class="music-control" onclick="toggleMusic()">Music: OFF 🔇</button>
-
-  <!-- ✅ ALL JAVASCRIPT MUST BE HERE -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div id="card">
+    <h1 id="title"></h1>
+    <p id="text"></p>
+    <div id="progress"></div>
+  </div>
 
   <script>
-    /* ===== MUSIC ===== */
-    let musicPlaying = false;
-    const audio = new Audio("music.mp3");
+    /* ================= SUPABASE ================= */
 
-    function toggleMusic() {
+    const SUPABASE_URL = "https://jiryuvhilpavphkxlpyw.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_4Q4tPM4z6TQI9WEgZaYeIQ_Rj1DaxDM";
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (!token) {
+      location.replace("index.html");
+    }
+
+    async function validateToken() {
+      const { data, error } = await supabase
+        .from("qr_tokens")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      if (error || !data || data.used) {
+        location.replace("index.html");
+        return;
+      }
+
+      await supabase
+        .from("qr_tokens")
+        .update({ used: true })
+        .eq("token", token);
+
+      startStory();
+    }
+
+    /* ================= MUSIC ================= */
+
+    const audio = new Audio("music.mp3");
+    let musicPlaying = false;
+    const musicBtn = document.getElementById("musicBtn");
+
+    musicBtn.addEventListener("click", () => {
       if (!musicPlaying) {
         audio.play();
-        document.querySelector('.music-control').innerText = "Music: ON 🎵";
+        musicBtn.innerText = "Music: ON 🎵";
       } else {
         audio.pause();
-        document.querySelector('.music-control').innerText = "Music: OFF 🔇";
+        musicBtn.innerText = "Music: OFF 🔇";
       }
       musicPlaying = !musicPlaying;
+    });
+
+    /* ================= STORY ================= */
+
+    const stages = [
+      ["Moment", "This page exists only once."],
+      ["Truth", "Some feelings aren’t meant to repeat."],
+      ["Heartbeat", "Every second here matters."],
+      ["Surprise", "You weren’t supposed to expect this."],
+      ["Question", "Will you be my forever? ❤️"]
+    ];
+
+    let i = 0;
+    const titleEl = document.getElementById("title");
+    const textEl = document.getElementById("text");
+    const card = document.getElementById("card");
+    const progress = document.getElementById("progress");
+
+    function render() {
+      titleEl.textContent = stages[i][0];
+      textEl.textContent = stages[i][1];
+      progress.style.width = ((i + 1) / stages.length * 100) + "%";
+
+      gsap.fromTo(
+        card,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.8 }
+      );
     }
 
-    /* ===== PARTICLE BACKGROUND ===== */
-    const canvas = document.getElementById("canvas-bg");
-    const ctx = canvas.getContext("2d");
-    let w, h, particles = [];
+    function startStory() {
+      render();
 
-    function resizeCanvas() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
+      card.addEventListener("click", () => {
+        if (i >= stages.length - 1) {
+          finale();
+          return;
+        }
+
+        gsap.to(card, {
+          opacity: 0,
+          y: -40,
+          duration: 0.4,
+          onComplete: () => {
+            i++;
+            render();
+          }
+        });
+      });
     }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
 
-    class Particle {
-      constructor() { this.reset(); }
-      reset() {
-        this.x = Math.random() * w;
-        this.y = Math.random() * h;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.alpha = Math.random() * 0.5;
+    /* ================= FINALE ================= */
+
+    function finale() {
+      for (let j = 0; j < 60; j++) {
+        const heart = document.createElement("div");
+        heart.textContent = "❤️";
+        heart.style.position = "fixed";
+        heart.style.left = Math.random() * 100 + "vw";
+        heart.style.top = "100vh";
+        heart.style.fontSize = (20 + Math.random() * 25) + "px";
+        heart.style.transition = "3s ease-out";
+        document.body.appendChild(heart);
+
+        setTimeout(() => {
+          heart.style.top = "-10vh";
+          heart.style.opacity = "0";
+        }, 50);
       }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.x < 0 || this.y < 0 || this.x > w || this.y > h) this.reset();
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(170,221,255,${this.alpha})`;
-        ctx.fill();
-      }
     }
 
-    for (let i = 0; i < 100; i++) particles.push(new Particle());
-
-    function animateBg() {
-      ctx.clearRect(0, 0, w, h);
-      particles.forEach(p => { p.update(); p.draw(); });
-      requestAnimationFrame(animateBg);
-    }
-    animateBg();
+    validateToken();
   </script>
 
 </body>
-</html>Moment","This page exists only once."],
-["Truth","Some feelings aren’t meant to repeat."],
-["Heartbeat","Every second here matters."],
-["Surprise","You weren’t supposed to expect this."],
-["Question","Will you be my forever? ❤️"]
-];
-
-let i=0;
-const title=document.getElementById("title");
-const text=document.getElementById("text");
-const card=document.getElementById("card");
-const progress=document.getElementById("progress");
-
-function render(){
-title.textContent=stages[i][0];
-text.textContent=stages[i][1];
-gsap.fromTo(card,{opacity:0,y:40},{opacity:1,y:0,duration:1});
-progress.style.width=((i+1)/stages.length*100)+"%";
-}
-
-function startStory(){
-render();
-addEventListener("click",()=>{
-  if(i>=stages.length-1){finale();return}
-  gsap.to(card,{opacity:0,y:-40,duration:.5,onComplete:()=>{i++;render()}});
-});
-}
-
-/* ================= FINALE ================= */
-function finale(){
-for(let j=0;j<70;j++){
-const h=document.createElement("div");
-h.textContent="❤️";
-h.style.position="fixed";
-h.style.left=Math.random()*100+"vw";
-h.style.top="100vh";
-h.style.fontSize=(20+Math.random()*25)+"px";
-h.style.transition="3s ease-out";
-document.body.appendChild(h);
-setTimeout(()=>{h.style.transform="translateY(-120vh) rotate(360deg)";h.style.opacity=0},50);
-setTimeout(()=>h.remove(),3000);
-}
-}
-
-/* ================= BACKGROUND ================= */
-const c=document.getElementById("bg"),ctx=c.getContext("2d");
-let w,h,p=[];
-function rs(){w=c.width=innerWidth;h=c.height=innerHeight}
-addEventListener("resize",rs);rs();
-class P{
-constructor(){this.r()}
-r(){this.x=Math.random()*w;this.y=Math.random()*h;this.vx=(Math.random()-.5);this.vy=(Math.random()-.5)}
-u(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>w||this.y<0||this.y>h)this.r()}
-d(){ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(this.x,this.y,1,1)}
-}
-for(let i=0;i<140;i++)p.push(new P());
-(function a(){
-ctx.fillStyle="#050a14";ctx.fillRect(0,0,w,h);
-p.forEach(o=>{o.u();o.d()});
-requestAnimationFrame(a);
-})();
-</script>
-
-</body>
-</html>Music() {
-  if (!musicPlaying) {
-    audio.play();
-    document.querySelector('.music-control').innerText = "Music: ON 🎵";
-  } else {
-    audio.pause();
-    document.querySelector('.music-control').innerText = "Music: OFF 🔇";
-  }
-  musicPlaying = !musicPlaying;
-}
-
-/* ================= PARTICLE BACKGROUND ================= */
-const canvas = document.getElementById("canvas-bg");
-const ctx = canvas.getContext("2d");
-let w, h, particles = [];
-function resizeCanvas() {
-  w = canvas.width = window.innerWidth;
-  h = canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
-class Particle {
-  constructor() { this.reset(); }
-  reset() {
-    this.x = Math.random() * w;
-    this.y = Math.random() * h;
-    this.vx = (Math.random() - 0.5) * 0.5;
-    this.vy = (Math.random() - 0.5) * 0.5;
+</html>om() - 0.5) * 0.5;
     this.alpha = Math.random() * 0.5;
   }
   update() {
